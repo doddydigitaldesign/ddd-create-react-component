@@ -1,0 +1,22 @@
+{
+  "name": "ddd-create-react-component",
+  "version": "0.1.0",
+  "description": "A Node.js CLI tool for adding React components according to some template",
+  "main": "index.js",
+  "scripts": {
+    "create:component": "tsc && node scripts/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "boilerplate",
+    "react",
+    "component",
+    "node",
+    "cli"
+  ],
+  "author": "\"Daniel Sonne Lehnberg <doddy@doddy.se>",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^3.8.3"
+  }
+}
