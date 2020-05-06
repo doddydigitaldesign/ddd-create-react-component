@@ -3,28 +3,40 @@ import readline from "readline";
 import { TemplateBuilder } from "./templateBuilder";
 import { Templates, templates } from "./templates";
 
-const r = readline.createInterface({
+const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
+export const questionAsync = async (
+  q: string,
+  fn: (answer: string) => void
+) => {
+  return new Promise((resolve, reject) => {
+    rl.question(q, (a) => {
+      try {
+        fn(a);
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
+};
 
 const capitalize = (arg: string) => {
   const [leadingChar, ...rest] = arg.split("");
   return leadingChar.toUpperCase().concat(rest.join(""));
 };
 
-const createComponent = () => {
+const createComponent = async () => {
   let componentsDir = "./src";
   let componentName = "newComponent";
   let componentDir = componentsDir + "/" + componentName;
-  const pathToComponent = componentDir + "/index.tsx";
   let fileTemplates: Templates = [];
-
   // Optional custom project structures
-  r.question(
-    "Path to components directory? (default: src/)",
+  await questionAsync(
+    "Path to components directory? (default: src/)\n",
     (customComponentsDir?: string) => {
-      r.p;
       if (customComponentsDir) {
         componentsDir = customComponentsDir;
       }
@@ -32,19 +44,21 @@ const createComponent = () => {
     }
   );
   // Optional custom component names
-  r.question(
-    "Component name? (default: newComponent)",
+  await questionAsync(
+    "Component name? (default: newComponent)\n",
     (customComponentName: string) => {
       componentDir = componentsDir + "/" + customComponentName;
-      componentName = capitalize(customComponentName);
+      componentName = customComponentName
+        ? capitalize(customComponentName)
+        : componentName;
       console.info("Component name:", componentName);
     }
   );
   // Get template identifiers to use
-  r.question(
+  await questionAsync(
     "Which templates should be used? \nExample usage:" +
       Object.keys(templates).join(",") +
-      "",
+      "\n",
     (templateIdentifiers?: string) => {
       if (templateIdentifiers) {
         fileTemplates = templateIdentifiers.split(",") as Templates;
@@ -72,6 +86,7 @@ const createComponent = () => {
 
       if (!fs.existsSync(componentDir)) {
         fs.mkdirSync(componentDir);
+        const pathToComponent = componentDir + "/index.tsx";
         if (fs.existsSync(componentDir)) {
           data.forEach((arr) => {
             fs.appendFileSync(pathToComponent, arr);
@@ -81,8 +96,8 @@ const createComponent = () => {
       } else {
         console.error("Component with that name already exists...");
       }
-      r.close();
     }
   );
+  rl.close();
 };
 createComponent();
