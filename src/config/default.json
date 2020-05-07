@@ -1,0 +1,13 @@
+{
+  "structure": {
+    "src": {
+      "components": {
+        "App": "App.tsx"
+      }
+    }
+  },
+  "fileTemplates": {
+    "reactFn": "React Function Component",
+    "reactMuiStyles": "React Material-UI Styles"
+  }
+}

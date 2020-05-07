@@ -1,88 +1,45 @@
 import fs from "fs";
-import readline from "readline";
-import { TemplateBuilder } from "./templateBuilder";
-import { Templates, templates } from "./templates";
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-export const questionAsync = async (
-  q: string,
-  fn: (answer: string) => void
-) => {
-  return new Promise((resolve, reject) => {
-    rl.question(q, (a) => {
-      try {
-        fn(a);
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
-    });
-  });
-};
-
-const capitalize = (arg: string) => {
-  const [leadingChar, ...rest] = arg.split("");
-  return leadingChar.toUpperCase().concat(rest.join(""));
-};
+import { Config, ConfigManager } from "./config/configManager";
+import { fileTemplates, structure } from "./config/default.json";
+import { questionAsync } from "./lib/questionAsync";
+import { rl } from "./lib/rl";
 
 const createComponent = async () => {
-  let componentsDir = "./src";
-  let componentName = "newComponent";
-  let componentDir = componentsDir + "/" + componentName;
-  let fileTemplates: Templates = [];
-  // Optional custom project structures
-  await questionAsync(
-    "Path to components directory? (default: src/)\n",
-    (customComponentsDir?: string) => {
-      if (customComponentsDir) {
-        componentsDir = customComponentsDir;
-      }
-      console.info("Path to components:", componentsDir);
-    }
-  );
-  // Optional custom component names
-  await questionAsync(
-    "Component name? (default: newComponent)\n",
-    (customComponentName: string) => {
-      componentDir = componentsDir + "/" + customComponentName;
-      componentName = customComponentName
-        ? capitalize(customComponentName)
-        : componentName;
-      console.info("Component name:", componentName);
-    }
-  );
+  const configManager = new ConfigManager({ fileTemplates, structure });
+  // If user supplies a path to a JSON config file, use that
+  if (process.env.CONFIG_FILE) {
+    const configFile: Config = require(process.env.CONFIG_FILE);
+
+    configManager.addFileTemplates(configFile.fileTemplates);
+  }
   // Get template identifiers to use
   await questionAsync(
     "Which templates should be used? \nExample usage:" +
-      Object.keys(templates).join(",") +
+      Object.keys(configManager.getFileTemplates()).join(",") +
       "\n",
     (templateIdentifiers?: string) => {
-      if (templateIdentifiers) {
-        fileTemplates = templateIdentifiers.split(",") as Templates;
-      }
+      let fileTemplates = templateIdentifiers?.split(",");
       console.info(
         "Using the following templates:",
-        fileTemplates.length > 0 ? fileTemplates.join(", ") : "None"
+        fileTemplates && fileTemplates?.length > 0
+          ? fileTemplates?.join(", ")
+          : "None"
       );
       if (
         !templateIdentifiers ||
-        !fileTemplates.some((x) => templateIdentifiers.includes(x))
+        !fileTemplates?.some((x) => templateIdentifiers.includes(x))
       ) {
         console.error("No templates were provided. Exiting...");
         return;
       }
-      const builder = new TemplateBuilder({
-        componentName,
-        templateIds: fileTemplates,
-      });
-      const templates = builder.getTemplates();
 
-      const data = templates.map(
+      const templates = configManager.getFileTemplates();
+
+      const data = Object.values(templates).map(
         (templateString) => new Uint8Array(Buffer.from(templateString))
       );
+
+      const structureMap = configManager.getStructure();
 
       if (!fs.existsSync(componentDir)) {
         fs.mkdirSync(componentDir);
